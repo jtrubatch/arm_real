@@ -67,7 +67,46 @@ def launch_setup(context, *args, **kwargs):
         parameters=[robot_description],
     )
 
-    return robot_state_publisher_node
+        # Other Controllers
+    load_joint_state_controller = ExecuteProcess(
+        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
+             'joint_state_broadcaster'],
+        output='screen'
+    )
+
+    load_joint_trajectory_controller = ExecuteProcess(
+        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
+             'joint_trajectory_controller'],
+        output='screen'
+
+    )
+    load_gripper_controller = ExecuteProcess(
+        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
+             'gripper_controller'],
+        output='screen'
+    )
+
+    joint_controller_spawner = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=load_joint_state_controller,
+            on_exit=[load_joint_trajectory_controller],
+        )
+
+    )
+
+    gripper_controller_spawner = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=load_joint_trajectory_controller,
+            on_exit=[load_gripper_controller]
+        )
+    )
+    start_up = [
+        robot_state_publisher_node,
+        load_joint_state_controller,
+        joint_controller_spawner,
+        gripper_controller_spawner,
+    ]
+    return start_up
 
 def generate_launch_description():
     # Robot State Publisher 
@@ -157,42 +196,9 @@ def generate_launch_description():
         )
     )
 
-    # Other Controllers
-    load_joint_state_controller = ExecuteProcess(
-        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-             'joint_state_broadcaster'],
-        output='screen'
-    )
 
-    load_joint_trajectory_controller = ExecuteProcess(
-        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-             'joint_trajectory_controller'],
-        output='screen'
 
-    )
-    load_gripper_controller = ExecuteProcess(
-        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-             'gripper_controller'],
-        output='screen'
-    )
-
-    joint_controller_spawner = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=load_joint_state_controller,
-            on_exit=[load_joint_trajectory_controller],
-        )
-
-    )
-
-    gripper_controller_spawner = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=load_joint_trajectory_controller,
-            on_exit=[load_gripper_controller]
-        )
-    )
-
-    return LaunchDescription([
-        load_joint_state_controller,
-        joint_controller_spawner,
-        gripper_controller_spawner,
+    return LaunchDescription(declared_arguments + [
+        OpaqueFunction(function=launch_setup)
     ])
+[]

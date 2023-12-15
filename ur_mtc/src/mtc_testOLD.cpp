@@ -31,25 +31,15 @@ struct poses{
     float yz;      
 };
 
-float grasp_approach = 0.08;
+float grasp_approach = 0.085;
 float grasp_retract = 0.1;
-float fill_approach = 0.08;
-float fill_retract = -0.15;
-float fill_retractX = -0.25;
-float fill_retractY = -0.18;
-float place_approach = -0.095;
-float place_retreat = 0.1;
-float regrasp_approach = -0.075;
-float regrasp_retract = 0.05;
-float preserveX = -0.30; // -0.25, -0.35, -0.58 WORKING
-float preserveY = -0.35;
-float serve_approach = -0.605;
-float serve_retract = 0.45; 
+float fill_approach = 0.1;
+float fill_retreat = 0.1;
 
 float cup_radius = 0.035; // meters
 float cup_height = 0.09;
 float counter_length = 0.5;
-float counter_width = 0.75;
+float counter_width = 0.5;
 float counter_height = 0.04;
 // UR Gazebo Pose 13.8, -18.56, 1.032
 // Cup Gazebo Pose 14.0, -18.2, 1.09
@@ -57,12 +47,12 @@ float counter_height = 0.04;
 // Camera Link -0.15 0.35 0.35 / 13.65 -18.11
 poses cup_pose = {0.2, 0.35, 0.045, 0.0, 0.0, 0.0};
 poses counter_pose = {0.16, -0.2, -0.02, 0.0, 0.0, 0.0};
-poses fill_pose = {0.15, 0.58, 0.15, 0.0, 0.0, 0.0}; // Check and Adjust Incrementally
+poses fill_pose = {0.35, 0.25, 0.035, 0.0, 0.0, 0.0}; 
 poses serve_pose = {-0.3, 0.1, -0.2, 0.0, 0.0, 0.0};
-
+//poses regrasp_pose = {0.1, 0.45, 0.065, 0.0, 0.0, 0.0}; 
 poses grasp_frame_transform = {0.0, 0.02, 0.2, M_PI/2, 0.0, 0.0}; // {x, y, z, rx, py, yz} Orients gripper and open/close horizontal
 poses regrasp_frame_transform = {0.0, 0.0, 0.22, M_PI, 0.0, 0.0}; 
-double cup_offset = -0.085;
+//geometry_msgs::msg::PoseStamped current_pose;
 
 // Utility Functions
 Eigen::Isometry3d toEigen(const poses& val) {
@@ -83,7 +73,7 @@ public:
     Perception() : Node("perception")
     {
         this->p_cloud_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-                    pc_topic, 1, std::bind(&Perception::cloudCallback, this, _1));
+                    pc_topic, 10, std::bind(&Perception::cloudCallback, this, _1));
         RCLCPP_INFO(LOGGER2,"Node Created");
     }
     
@@ -92,12 +82,11 @@ public:
         moveit::planning_interface::PlanningSceneInterface psi;
         moveit_msgs::msg::CollisionObject cup;
         geometry_msgs::msg::Pose pose;
-        Eigen::Vector3d cup_z(cylinder.orientation[0], cylinder.orientation[1], cylinder.orientation[2]);
-        Eigen::Vector3d world_z(0.0, 0.0, 1.0);
-        Eigen::Vector3d axis;
-        axis = world_z.cross(cup_z);
-        axis.normalize();
-        double angle = acos(cup_z.dot(world_z));
+        //Eigen::Vector3d cup_z(cylinder.orientation[0], cylinder.orientation[1], cylinder.orientation[2]);
+        //Eigen::Vector3d world_z(0.0, 0.0, 1.0);
+        //Eigen::Vector3d axis = cup_z.cross(world_z);
+        //axis.normalize();
+        //double angle = acos(world_z.dot(cup_z));
         // Using Known Camera Frame Orientation
         
         cup.id = "cup";
@@ -105,17 +94,16 @@ public:
         cup.primitives.resize(1);
         cup.primitives[0].type = shape_msgs::msg::SolidPrimitive::CYLINDER;
 	    cup.primitives[0].dimensions = { cylinder.height, cylinder.radius };
-        pose.orientation.x = (axis.x() * sin(angle / 2)) + cup_offset;
+        pose.orientation.x = 1.6; //axis.x() * sin(angle / 2);
         pose.orientation.y = 0.0; //axis.y() * sin(angle / 2);
-        pose.orientation.z = axis.z() * sin(angle / 2);
-        RCLCPP_INFO(LOGGER2, "Orientation X: %f, Y: %f, Z: %f, W: %f,  Angle: %f", pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w, angle);
-        pose.orientation.w = cos(angle /2);
+        pose.orientation.z = 0.0; //axis.z() * sin(angle / 2);
+        
+        pose.orientation.w = 1.0;
         pose.position.x = cylinder.center[0];
         pose.position.y = cylinder.center[1];
         pose.position.z = cylinder.center[2];
         cup.primitive_poses.push_back(pose);
-        RCLCPP_INFO(LOGGER2, "Cup Radius %.3f, Cup Height %.3f, Cup X %.3f Cup Y %.3f Cup Z %.3f", 
-                    cylinder.radius, cylinder.height, cylinder.center[0], cylinder.center[1], cylinder.center[2]);
+        RCLCPP_INFO(LOGGER2, " X: %f, Y: %f, Z: %f ", pose.position.x, pose.position.y, pose.position.z);
         psi.applyCollisionObject(cup);
         RCLCPP_INFO(LOGGER2,"Cup Created");
         cup_added = true;
@@ -146,7 +134,6 @@ private:
     
     void cloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr pcmsg)
     {
-        RCLCPP_INFO(LOGGER2, "Perception Callback Begin");
         if(first_call)
         {
             // Convert Format
@@ -187,7 +174,7 @@ private:
 
             pcl::ModelCoefficients::Ptr coeff_plane_(new pcl::ModelCoefficients);
             segmentor.segment(*inliers_plane_, *coeff_plane_);
-
+            
             pcl::ExtractIndices<pcl::PointXYZRGB> extracted_indices;
             extracted_indices.setInputCloud(cloud_);
             extracted_indices.setIndices(inliers_plane_);
@@ -260,7 +247,7 @@ private:
                         highest_point[2] = point.z;
                     }
                 }
-                RCLCPP_INFO(LOGGER2,"CB 13");
+
                 cylinder.center[0] = (highest_point[0] + lowest_point[0]) / 2; 
                 cylinder.center[1] = (highest_point[1] + lowest_point[1]) / 2;
                 cylinder.center[2] = (highest_point[2] + lowest_point[2]) / 2;
@@ -269,7 +256,7 @@ private:
                     sqrt(pow((lowest_point[0] - highest_point[0]), 2) + pow((lowest_point[1] - highest_point[1]), 2) +
                     pow((lowest_point[2] - highest_point[2]), 2));
 
-                RCLCPP_INFO(LOGGER2, "CB Cup Radius %.3f, Cup Height %.3f, Cup X %.3f Cup Y %.3f Cup Z %.3f", 
+                RCLCPP_INFO(LOGGER2, "Cup Radius %.3f, Cup Height %.3f, Cup X %.3f Cup Y %.3f Cup Z %.3f", 
                     cylinder.radius, cylinder.height, cylinder.center[0], cylinder.center[1], cylinder.center[2]);
                 
                 cylinder_found = true;
@@ -295,20 +282,6 @@ private:
 
     
 }; // END UR CONTROL CLASS
-/*
-moveit_msgs::msg::CollisionObject createCup(const poses &cup_pose, const float &cup_height, const float &cup_radius)
-{
-    geometry_msgs::msg::Pose pose = toPose(cup_pose);
-	moveit_msgs::msg::CollisionObject object;
-	object.id = "cup";
-	object.header.frame_id = "world";
-	object.primitives.resize(1);
-	object.primitives[0].type = shape_msgs::msg::SolidPrimitive::CYLINDER;
-	object.primitives[0].dimensions = { cup_height, cup_radius };
-	object.primitive_poses.push_back(pose);
-	return object;
-}
-*/
 
 moveit_msgs::msg::CollisionObject createCounter(const poses &counter_pose, const float &counter_length, const float &counter_width, const float &counter_height)
 {
@@ -351,9 +324,8 @@ void UrControl::setupPlanningScene()
 
 bool UrControl::doTask()
 {
-
     task_ = createTask();
-    
+
     try
     {
         task_.init();
@@ -402,8 +374,6 @@ mtc::Task UrControl::createTask()
 
     auto sampling_planner = std::make_shared<mtc::solvers::PipelinePlanner>(node_);
     sampling_planner->setProperty("goal_joint_tolerance", 1e-4);
-    //sampling_planner->setProperty("multi_query_planning_enabled", true);
-    //sampling_planner->setPlannerId("geometric::LBKPIECE");
     
     auto cartesian_planner = std::make_shared<mtc::solvers::CartesianPath>();
     cartesian_planner->setMaxVelocityScalingFactor(1.0);
@@ -411,25 +381,6 @@ mtc::Task UrControl::createTask()
     cartesian_planner->setStepSize(0.001);
     cartesian_planner->setJumpThreshold(1.5);
     
-    /* Constraints 
-    moveit_msgs::msg::Constraints serve_constraint;
-    serve_constraint.name = "serve_coffee";
-    serve_constraint.orientation_constraints.resize(1);
-   
-    {
-        moveit_msgs::msg::OrientationConstraint &c = serve_constraint.orientation_constraints[0];
-        c.link_name = "tool0"; 
-        c.header.frame_id = "invert_ref";
-        c.orientation.x = 0.0; // 
-        c.orientation.y = 0.0;
-        c.orientation.z = 0.707;
-        c.orientation.w = 0.707; 
-        c.absolute_x_axis_tolerance = 0.68;
-        c.absolute_y_axis_tolerance = 0.68;
-        c.absolute_z_axis_tolerance = 3.15;
-        c.weight = 1.0;
-    }
-     */
     // ***STAGES***
     // -> Current State Pointer ->
     mtc::Stage* current_state_ = nullptr;
@@ -439,7 +390,7 @@ mtc::Task UrControl::createTask()
 		// Verify that object is not attached
 		auto applicability_filter =
 		    std::make_unique<mtc::stages::PredicateFilter>("applicability test", std::move(current_state));
-		applicability_filter->setPredicate([object = "cup"](const mtc::SolutionBase& s, std::string& comment) {
+		applicability_filter->setPredicate([object = "counter"](const mtc::SolutionBase& s, std::string& comment) {
 			if (s.start()->scene()->getCurrentState().hasAttachedBody(object)) {
 				comment = "object is already attached and cannot be picked";
 				return false;
@@ -577,7 +528,7 @@ mtc::Task UrControl::createTask()
     }   
     // ***Fill Coffee Container***
     // -> Fill Stage Pointer ->
-    mtc::Stage* fill_stage_ = nullptr;
+    //mtc::Stage* fill_stage_ = nullptr;
     {
         auto fill = std::make_unique<mtc::SerialContainer>("fill coffee");
         task.properties().exposeTo(fill->properties(), {"eef", "hand", "group", "ik_frame"});
@@ -619,41 +570,6 @@ mtc::Task UrControl::createTask()
             fill->insert(std::move(wrapper));
         }
 
-        // ***Retract from Coffee Machine <MoveRelative>***
-        {
-            auto stage = std::make_unique<mtc::stages::MoveRelative>("retract coffee", cartesian_planner);
-            stage->properties().configureInitFrom(mtc::Stage::PARENT, {"group"});
-            //stage->setMinMaxDistance(0.1, 0.2);
-            stage->setIKFrame(gripper_frame);
-            stage->properties().set("marker_ns", "retract_coffee");
-            // Set Direction
-            geometry_msgs::msg::Vector3Stamped vec;
-            vec.header.frame_id = "world";
-            vec.vector.x = fill_retractX;
-            vec.vector.y = fill_retractY;
-            //vec.vector.z = fill_retract;
-            stage->setDirection(vec);
-            // Get Pose for next stage TODO: FIX FOR USE
-            //current_pose = moveit::planning_interface::MoveGroupInterface::getCurrentPose("tool0");
-            fill->insert(std::move(stage));
-        }
-        
-        // ***Lower Cup <MoveRelative>***
-        {
-            auto stage = std::make_unique<mtc::stages::MoveRelative>("lower cup", cartesian_planner);
-            stage->properties().set("marker_ns", "lower_cup");
-            //stage->properties().set("link", gripper_frame);
-            stage->properties().configureInitFrom(mtc::Stage::PARENT, { "group" });
-            //stage->setMinMaxDistance(0.05, 0.15);
-
-            // Set down direction
-            geometry_msgs::msg::Vector3Stamped vec;
-            vec.header.frame_id = "world";
-            vec.vector.z = place_approach; // ADJUST IF NEEDED 
-            stage->setDirection(vec);
-            fill->insert(std::move(stage));
-        }
-
         // ***Open Gripper <MoveTo>***
         {
             auto stage = std::make_unique<mtc::stages::MoveTo>("open gripper", interpolation_planner);
@@ -688,185 +604,15 @@ mtc::Task UrControl::createTask()
             //Set Retreat Direction
             geometry_msgs::msg::Vector3Stamped vec;
             vec.header.frame_id = "world";
-            vec.vector.z = place_retreat;
+            vec.vector.z = fill_retreat;
             stage->setDirection(vec);
             fill->insert(std::move(stage));
         }
         // -> Set Fill Stage Pointer ->
-        fill_stage_ = fill.get();
+        //fill_stage_ = fill.get();
         task.add(std::move(fill));
     } // END FILL COFFEE CONTAINER
 
-    // ***Move to Regrasp <Connector>***
-    {
-        auto stage = std::make_unique<mtc::stages::Connect>(
-        "move to regrasp", mtc::stages::Connect::GroupPlannerVector{{ arm_group_name, sampling_planner }}); 
-        stage->setTimeout(10.0);
-        stage->properties().configureInitFrom(mtc::Stage::PARENT);
-        task.add(std::move(stage));
-    }
-    
-    // -> Regrasp Stage Pointer ->
-    // mtc::Stage* regrasp_stage_ = nullptr;
-    // ***Regrasp Container***
-    {
-        auto regrasp = std::make_unique<mtc::SerialContainer>("regrasp cup");
-        task.properties().exposeTo(regrasp->properties(), {"eef", "hand", "group", "ik_frame"});
-        regrasp->properties().configureInitFrom(mtc::Stage::PARENT, {"eef", "hand", "group", "ik_frame"});
-
-        // ***Approach Cup <MoveRelative>***
-        {
-            auto stage = std::make_unique<mtc::stages::MoveRelative>("approach regrasp", cartesian_planner);
-            stage->properties().set("marker_ns", "approach regrasp");
-            stage->properties().set("link", gripper_frame);
-            stage->properties().configureInitFrom(mtc::Stage::PARENT, {"group"});
-            //stage->setMinMaxDistance(0.075, 0.15);
-
-            // Set Direction
-            geometry_msgs::msg::Vector3Stamped vec;
-            vec.header.frame_id = "world";
-            vec.vector.z = regrasp_approach; // ADJUST
-            stage->setDirection(vec);
-            regrasp->insert(std::move(stage));
-        }
-
-        // ***Generate Grasp Pose <Generator>***
-        {
-            auto stage = std::make_unique<mtc::stages::GenerateGraspPose>("generate regrasp pose");
-            stage->properties().configureInitFrom(mtc::Stage::PARENT);
-			stage->properties().set("marker_ns", "regrasp_pose");
-			stage->setPreGraspPose("open");
-			stage->setObject("cup");
-			stage->setAngleDelta(M_PI / 16);
-			stage->setMonitoredStage(fill_stage_);
-
-            // ***Compute IK***
-            auto wrapper = std::make_unique<mtc::stages::ComputeIK>("regrasp pose IK", std::move(stage));
-			wrapper->setMaxIKSolutions(12);
-			wrapper->setMinSolutionDistance(1.0);
-			wrapper->setIKFrame(toEigen(regrasp_frame_transform), gripper_frame);
-			wrapper->properties().configureInitFrom(mtc::Stage::PARENT, { "eef", "group" });
-			wrapper->properties().configureInitFrom(mtc::Stage::INTERFACE, { "target_pose" });
-			regrasp->insert(std::move(wrapper)); 
-        }
-
-        // *** Allow Collision <PlanningScene>***
-        {
-            auto stage = std::make_unique<mtc::stages::ModifyPlanningScene>("allow collision");
-			stage->allowCollisions(
-			    "cup",
-			    task.getRobotModel()->getJointModelGroup(gripper_group_name)->getLinkModelNamesWithCollisionGeometry(),
-			    true);
-			regrasp->insert(std::move(stage));
-        }
-
-        // ***Close Gripper <MoveTo>***
-        {
-            auto stage = std::make_unique<mtc::stages::MoveTo>("close gripper", interpolation_planner);
-			stage->setGroup(gripper_group_name);
-			stage->setGoal("close");
-			regrasp->insert(std::move(stage));    
-        }
-
-        // ***Attach Cup <PlanningScene>***
-        {
-            auto stage = std::make_unique<mtc::stages::ModifyPlanningScene>("attach cup");
-			stage->attachObject("cup", gripper_frame);
-			regrasp->insert(std::move(stage));
-        }
-
-        // ***Lift Cup <MoveRelative>***
-        {
-            auto stage = std::make_unique<mtc::stages::MoveRelative>("lift cup", cartesian_planner);
-			stage->properties().configureInitFrom(mtc::Stage::PARENT, {"group"});
-			//stage->setMinMaxDistance(0.05, 0.15);
-			stage->setIKFrame(gripper_frame);
-			stage->properties().set("marker_ns", "lift_cup");
-
-			// Set direction
-			geometry_msgs::msg::Vector3Stamped vec;
-			vec.header.frame_id = "world";
-			vec.vector.z = regrasp_retract;
-			stage->setDirection(vec);
-			regrasp->insert(std::move(stage));
-        }
-        
-        // ***Move to Pre-Serve Position <MoveRelative>***
-        {
-            auto stage = std::make_unique<mtc::stages::MoveRelative>("pre-serve", cartesian_planner);
-			stage->properties().configureInitFrom(mtc::Stage::PARENT, {"group"});
-			//stage->setMinMaxDistance(0.05, 0.15);
-			stage->setIKFrame(gripper_frame);
-			stage->properties().set("marker_ns", "lift_cup");
-
-			// Set direction
-			geometry_msgs::msg::Vector3Stamped vec;
-			vec.header.frame_id = "world";
-			vec.vector.x = preserveX;
-            vec.vector.y = preserveY;
-			stage->setDirection(vec);
-			regrasp->insert(std::move(stage));
-        }
-
-        // ***Serve to Baristabot <MoveRelative>***
-        {
-            auto stage = std::make_unique<mtc::stages::MoveRelative>("move to baristabot", cartesian_planner);
-			stage->properties().set("marker_ns", "serve_cup");
-            stage->properties().configureInitFrom(mtc::Stage::PARENT, {"group"});
-			//stage->setMinMaxDistance(0.05, 0.15);
-			
-			// Set direction
-			geometry_msgs::msg::Vector3Stamped vec;
-			vec.header.frame_id = "world";
-			vec.vector.z = serve_approach; 
-			stage->setDirection(vec);
-			regrasp->insert(std::move(stage));
-        }   
-
-        //  ***Open Gripper <MoveTo>***
-        {
-            auto stage = std::make_unique<mtc::stages::MoveTo>("open gripper", interpolation_planner);
-            stage->setGroup(gripper_group_name);
-            stage->setGoal("open");       
-            regrasp->insert(std::move(stage));    
-        }
-        
-        // ***Disable Collision <PlanningScene>***
-        {
-            auto stage = std::make_unique<mtc::stages::ModifyPlanningScene>("disable collision");
-            stage->allowCollisions("cup", 
-                task.getRobotModel()->getJointModelGroup(gripper_group_name)->getLinkModelNamesWithCollisionGeometry(),
-                false); 
-            regrasp->insert(std::move(stage));
-        }
-        
-        // ***Detach Cup <PlanningScene>***
-        {
-            auto stage = std::make_unique<mtc::stages::ModifyPlanningScene>("detach cup");
-            stage->detachObject("cup", gripper_frame);
-            regrasp->insert(std::move(stage));
-        }
-
-        // ***Retract from Serve Pose
-        {
-            auto stage = std::make_unique<mtc::stages::MoveRelative>("move to baristabot", cartesian_planner);
-			stage->properties().configureInitFrom(mtc::Stage::PARENT, {"group"});
-			//stage->setMinMaxDistance(0.05, 0.15);
-			stage->setIKFrame(gripper_frame);
-			stage->properties().set("marker_ns", "serve_cup");
-
-			// Set direction
-			geometry_msgs::msg::Vector3Stamped vec;
-			vec.header.frame_id = "world";
-			vec.vector.z = serve_retract; 
-			stage->setDirection(vec);
-			regrasp->insert(std::move(stage));
-        }  
-        // -> Set Regrasp Stage Pointer ->
-        //regrasp_stage_ = regrasp.get(); 
-
-        task.add(std::move(regrasp));
-    } // END REGRASP CONTAINER
 
     // RETURN HOME
     /*
@@ -898,14 +644,17 @@ int main(int argc, char** argv)
         exec.spin();
         exec.remove_node(mtc_node->getNodeBaseInterface());
     });
-    mtc_node->setupPlanningScene();   
-    // Wait for Perception
+    mtc_node->setupPlanningScene();
     while(!perception_node->cylinder_found)
     {
-        rclcpp::sleep_for(std::chrono::milliseconds(250));
+         rclcpp::sleep_for(std::chrono::milliseconds(500));
     }
     perception_node->addCup();
-    mtc_node->doTask();
+    int attempts = 0;
+    while(!mtc_node->doTask() && attempts < 3)
+    {
+        ++attempts;
+    }
 
     spin_thread->join();
     rclcpp::shutdown();

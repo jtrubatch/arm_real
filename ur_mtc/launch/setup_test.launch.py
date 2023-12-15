@@ -9,11 +9,11 @@ from moveit_configs_utils import MoveItConfigsBuilder
 def generate_launch_description():
     # Configs
     moveit_config = (
-        MoveItConfigsBuilder("name", package_name="real_moveit_config")
+        MoveItConfigsBuilder("name", package_name="r85_moveit_config")
         .planning_pipelines(pipelines=["ompl", "chomp", "pilz_industrial_motion_planner"])
         .robot_description(file_path="config/name.urdf.xacro")
         .trajectory_execution(file_path="config/moveit_controllers.yaml")
-        #.sensors_3d(file_path="config/sensors_3d.yaml")
+        .sensors_3d(file_path="config/sensors_3d.yaml")
         .to_moveit_configs()
     )
     
@@ -33,8 +33,8 @@ def generate_launch_description():
     }
     # Octomap
     octomap_config = {'octomap_frame': 'world', 
-                      'octomap_resolution': 0.02,
-                      'max_range': 2.0}
+                      'octomap_resolution': 0.01,
+                      'max_range': 5.0}
     
     # Move Group Node
     move_group_node = Node(

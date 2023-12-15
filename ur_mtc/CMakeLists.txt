@@ -9,12 +9,39 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(moveit_core REQUIRED)
-find_package(moveit_task_contructor_core REQUIRED)
+find_package(moveit_task_constructor_core REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
 find_package(pcl_ros REQUIRED)
 find_package(pcl_msgs REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(sensor_msgs REQUIRED)
+
+add_executable(mtc_test src/mtc_test.cpp)
+ament_target_dependencies(mtc_test rclcpp moveit_core moveit_task_constructor_core moveit_ros_planning_interface pcl_ros pcl_conversions pcl_msgs sensor_msgs)
+
+target_include_directories(mtc_test PUBLIC
+$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+$<INSTALL_INTERFACE:include>)
+
+target_compile_features(mtc_test PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+
+install(TARGETS mtc_test
+		DESTINATION lib/${PROJECT_NAME})
+
+add_executable(mtc_test_ng src/mtc_test_ng.cpp)
+ament_target_dependencies(mtc_test_ng rclcpp moveit_core moveit_task_constructor_core moveit_ros_planning_interface pcl_ros pcl_conversions pcl_msgs sensor_msgs)
+
+target_compile_features(mtc_test_ng PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+
+install(TARGETS mtc_test_ng
+		DESTINATION lib/${PROJECT_NAME})
+
+install(DIRECTORY 
+        launch 
+        config 
+        DESTINATION share/${PROJECT_NAME})
+
+include_directories(include ${PCL_INCLUDE_DIRS} /opt/ros/humble/include/pcl_msgs)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -28,4 +55,5 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+ament_export_include_directories(include)
 ament_package()

@@ -4,9 +4,9 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Motion Planning Tasks1
+        - /Axes1
       Splitter Ratio: 0.5
-    Tree Height: 784
+    Tree Height: 628
   - Class: rviz_common/Help
     Name: Help
   - Class: rviz_common/Views
@@ -23,19 +23,22 @@ Panels:
     Name: Motion Planning Tasks
     Tasks View:
       property_splitter:
-        - 591
-        - 197
+        - 473
+        - 158
       solution_sorting:
         column: 0
         order: 1
       solutions_splitter:
         - 329
         - 228
-      solutions_view_columns: ~
+      solutions_view_columns:
+        - 38
+        - 58
+        - 116
       tasks_view_columns:
-        - 199
-        - 57
-        - 57
+        - 257
+        - 28
+        - 28
         - 0
 Visualization Manager:
   Class: ""
@@ -56,7 +59,7 @@ Visualization Manager:
         Z: 0
       Plane: XY
       Plane Cell Count: 10
-      Reference Frame: <Fixed Frame>
+      Reference Frame: world
       Value: true
     - Class: moveit_task_constructor/Motion Planning Tasks
       Enabled: true
@@ -178,43 +181,6 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
-          wrist_rgbd_camera_depth_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          wrist_rgbd_camera_depth_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          wrist_rgbd_camera_fisheye_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          wrist_rgbd_camera_fisheye_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          wrist_rgbd_camera_left_ir_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          wrist_rgbd_camera_left_ir_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          wrist_rgbd_camera_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          wrist_rgbd_camera_right_ir_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          wrist_rgbd_camera_right_ir_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
         Robot Alpha: 0.5
         Show Robot Collision: false
         Show Robot Visual: true
@@ -360,46 +326,16 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
-          wrist_rgbd_camera_depth_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          wrist_rgbd_camera_depth_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          wrist_rgbd_camera_fisheye_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          wrist_rgbd_camera_fisheye_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          wrist_rgbd_camera_left_ir_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          wrist_rgbd_camera_left_ir_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          wrist_rgbd_camera_link:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          wrist_rgbd_camera_right_ir_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-          wrist_rgbd_camera_right_ir_optical_frame:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
         Robot Alpha: 1
         Show Robot Collision: false
         Show Robot Visual: true
+      Value: true
+    - Class: rviz_default_plugins/Axes
+      Enabled: true
+      Length: 0.20000000298023224
+      Name: Axes
+      Radius: 0.009999999776482582
+      Reference Frame: world
       Value: true
   Enabled: true
   Global Options:
@@ -434,15 +370,15 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.814797043800354
+      Pitch: 0.2097969353199005
       Target Frame: world
       Value: Orbit (rviz_default_plugins)
-      Yaw: 3.1451945304870605
+      Yaw: 6.165197372436523
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: true
-  Height: 935
+  Height: 780
   Help:
     collapsed: false
   Hide Left Dock: true
@@ -451,9 +387,9 @@ Window Geometry:
     collapsed: false
   Motion Planning Tasks - Slider:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd0000000200000000000001560000034dfc0200000008fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb000000100044006900730070006c006100790073000000003d0000034d000000c900fffffffb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e0067000000014e000001e70000000000000000fb0000000800480065006c0070000000029a0000006e0000006e00fffffffb0000000a00560069006500770073000000030b000000b5000000a400fffffffb000000120020002d00200053006c00690064006500720000000000ffffffff0000000000000000fb0000003c004d006f00740069006f006e00200050006c0061006e006e0069006e00670020005400610073006b00730020002d00200053006c00690064006500720000000000ffffffff0000004100fffffffb0000002c004d006f00740069006f006e00200050006c0061006e006e0069006e0067002000530074006100670065007301000002e4000000a9000000000000000000000001000002310000034dfc0200000001fb0000002a004d006f00740069006f006e00200050006c0061006e006e0069006e00670020005400610073006b0073010000003d0000034d000000e700ffffff0000038b0000034d00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000200000000000001e5000002b1fc020000000afb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb000000100044006900730070006c006100790073000000003e000002b1000000cb00fffffffb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e0067000000014e000001e70000000000000000fb0000000800480065006c0070000000029a0000006e0000006f00fffffffb0000000a00560069006500770073000000030b000000b5000000a500fffffffb000000120020002d00200053006c00690064006500720000000000ffffffff0000000000000000fb0000003c004d006f00740069006f006e00200050006c0061006e006e0069006e00670020005400610073006b00730020002d00200053006c00690064006500720000000000ffffffff0000004100fffffffb0000002c004d006f00740069006f006e00200050006c0061006e006e0069006e0067002000530074006100670065007301000002e4000000a90000000000000000fb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fbffffffff01000001670000018800000000000000000000000100000231000002b1fc0200000001fb0000002a004d006f00740069006f006e00200050006c0061006e006e0069006e00670020005400610073006b0073010000003e000002b1000000ea00ffffff0000038a000002b100000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Views:
     collapsed: false
-  Width: 1474
-  X: 1063
-  Y: 27
+  Width: 1473
+  X: 65
+  Y: 24

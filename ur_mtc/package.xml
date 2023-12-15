@@ -11,7 +11,7 @@
 
   <depend>rclcpp</depend>
   <depend>moveit_core</depend>
-  <depend>moveit_task_contructor_core</depend>
+  <depend>moveit_task_constructor_core</depend>
   <depend>moveit_ros_planning_interface</depend>
   <depend>pcl_ros</depend>
   <depend>pcl_msgs</depend>

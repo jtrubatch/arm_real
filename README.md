@@ -47,10 +47,4 @@ setup_real.launch.py
     - use_sim_time: False
 - RVIZ
 
-## TODO:
-- controllers_real.launch.py 
-    - Clean Up and Finalize
-- Add RVIZ Config Files
-- Check Files for Conflicts
-- Add Real and Sim MTC Program Nodes
-- Edit World File
+
