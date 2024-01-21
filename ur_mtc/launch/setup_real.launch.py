@@ -10,10 +10,10 @@ def generate_launch_description():
     # Configs
     moveit_config = (
         MoveItConfigsBuilder("name", package_name="real_moveit_config")
-        .planning_pipelines(pipelines=["ompl", "chomp", "pilz_industrial_motion_planner"])
+        .planning_pipelines(pipelines=["ompl"])
         .robot_description(file_path="config/name.urdf.xacro")
         .trajectory_execution(file_path="config/moveit_controllers.yaml")
-        #.sensors_3d(file_path="config/sensors_3d.yaml")
+        .sensors_3d(file_path="config/sensors_3d.yaml")
         .to_moveit_configs()
     )
     
@@ -43,6 +43,8 @@ def generate_launch_description():
         output="screen",
         parameters=[
             moveit_config.to_dict(),
+            {"trajectory_execution.allowed_execution_duration_scaling": 5.0,},
+            {"trajectory_execution.allowed_goal_duration_margin": 5.0,},
             move_group_capabilities,
             planning_scene_monitor_params,
             octomap_config,

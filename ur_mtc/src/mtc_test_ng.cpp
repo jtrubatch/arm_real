@@ -34,11 +34,13 @@ struct poses{
 };
 
 float grasp_approach = 1.0;
-float grasp_retract = 0.1;
+float grasp_retract = 1.0;
 float fill_approach = 1.0; // Set to 1.0 to use range
 float fill_retract = -0.15;
-float fill_retractX = -0.18;
-float fill_retractY = -0.12;
+float fill_retractX1 = -0.05; 
+float fill_retractY1 = -0.1;
+float fill_retractX2 = 0.05;
+float fill_retractY2 = -0.06; 
 float place_approach = -0.09;
 float place_retreat = 0.1;
 float regrasp_approach = -1.0;
@@ -67,11 +69,11 @@ poses cup_pose = {0.2, 0.35, 0.045, 0.0, 0.0, 0.0};
 poses counter_pose = {0.16, 0.0, -0.02, 0.0, 0.0, 0.0};
 poses subcounter_pose = {0.16, 0.2, -0.0325, 0.0, 0.0, 0.0};
 poses machine_pose = {0.425, 0.65, 0.15, 0.0, 0.0, 0.0};
-poses fill_pose = {0.215, 0.53, 0.12, 0.0, 0.0, 0.0}; // Check and Adjust Incrementally
+poses fill_pose = {0.18, 0.58, 0.15, 0.0, 0.0, 0.0}; // Check and Adjust Incrementally
 poses serve_pose = {-0.3, 0.1, -0.2, 0.0, 0.0, 0.0};
 
-poses grasp_frame_transform = {0.0, 0.02, 0.2, M_PI/2, 0.0, 0.0}; // {x, y, z, rx, py, yz} Orients gripper and open/close horizontal
-poses regrasp_frame_transform = {0.0, 0.0, 0.22, M_PI, 0.0, 0.0}; 
+poses grasp_frame_transform = {0.0, 0.02, 0.225, M_PI/2, 0.0, 0.0}; // {x, y, z, rx, py, yz} Orients gripper and open/close horizontal
+poses regrasp_frame_transform = {0.0, 0.0, 0.225, M_PI, 0.0, 0.0}; 
 double cup_offset = -0.085;
 
 // Utility Functions
@@ -121,8 +123,8 @@ public:
         RCLCPP_INFO(LOGGER2, "Orientation X: %f, Y: %f, Z: %f, W: %f,  Angle: %f", pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w, angle);
         pose.orientation.w = cos(angle /2);
         pose.position.x = cylinder.center[0];
-        pose.position.y = cylinder.center[1];
-        pose.position.z = cylinder.center[2];
+        pose.position.y = cylinder.center[1]; //+ (0.03 * std::cos(cup_offset));
+        pose.position.z = cylinder.center[2]; //+ (0.03 * std::sin(cup_offset));
         cup.primitive_poses.push_back(pose);
         RCLCPP_INFO(LOGGER2, "Cup Radius %.3f, Cup Height %.3f, Cup X %.3f Cup Y %.3f Cup Z %.3f", 
                     cylinder.radius, cylinder.height, cylinder.center[0], cylinder.center[1], cylinder.center[2]);
@@ -446,28 +448,25 @@ mtc::Task UrControl::createTask()
     auto cartesian_planner = std::make_shared<mtc::solvers::CartesianPath>();
     cartesian_planner->setMaxVelocityScalingFactor(1.0);
     cartesian_planner->setMaxAccelerationScalingFactor(1.0);
-    cartesian_planner->setStepSize(0.001);
+    cartesian_planner->setStepSize(0.01);
     cartesian_planner->setJumpThreshold(1.5);
     
-    /* Constraints 
-    moveit_msgs::msg::Constraints serve_constraint;
-    serve_constraint.name = "serve_coffee";
-    serve_constraint.orientation_constraints.resize(1);
-   
-    {
-        moveit_msgs::msg::OrientationConstraint &c = serve_constraint.orientation_constraints[0];
-        c.link_name = "tool0"; 
-        c.header.frame_id = "invert_ref";
-        c.orientation.x = 0.0; // 
-        c.orientation.y = 0.0;
-        c.orientation.z = 0.707;
-        c.orientation.w = 0.707; 
-        c.absolute_x_axis_tolerance = 0.68;
-        c.absolute_y_axis_tolerance = 0.68;
-        c.absolute_z_axis_tolerance = 3.15;
-        c.weight = 1.0;
-    }
-     */
+    // Constraints 
+    moveit_msgs::msg::OrientationConstraint gc;
+    gc.link_name = "tool0"; 
+    gc.header.frame_id = "world";
+    gc.orientation.x = 0.0; // 
+    gc.orientation.y = 0.0;
+    gc.orientation.z = 0.0;
+    gc.orientation.w = 1.0; 
+    gc.absolute_x_axis_tolerance = 0.68;
+    gc.absolute_y_axis_tolerance = 0.68;
+    gc.absolute_z_axis_tolerance = 3.15;
+    gc.weight = 1.0;
+
+    moveit_msgs::msg::Constraints grasp_constraint;
+    grasp_constraint.orientation_constraints.push_back(gc);
+
     // ***STAGES***
     // -> Current State Pointer ->
     mtc::Stage* current_state_ = nullptr;
@@ -529,7 +528,7 @@ mtc::Task UrControl::createTask()
             stage->properties().set("marker_ns", "approach cup");
             stage->properties().set("link", gripper_frame);
             stage->properties().configureInitFrom(mtc::Stage::PARENT, {"group"});
-            stage->setMinMaxDistance(0.01, 0.1);
+            stage->setMinMaxDistance(0.03, 0.1);
 
              // Set hand forward direction
             geometry_msgs::msg::Vector3Stamped vec;
@@ -548,6 +547,7 @@ mtc::Task UrControl::createTask()
             stage->setObject("cup");
             stage->setAngleDelta(M_PI / 16); 
             stage->setMonitoredStage(current_state_);
+            stage->setPathConstraints(grasp_constraint);
             
             // ***Compute IK <Wrapper>***
             auto wrapper = std::make_unique<mtc::stages::ComputeIK>("initial grasp pose IK", std::move(stage));
@@ -582,7 +582,7 @@ mtc::Task UrControl::createTask()
         {
             auto stage = std::make_unique<mtc::stages::MoveRelative>("lift cup", cartesian_planner);
             stage->properties().configureInitFrom(mtc::Stage::PARENT, {"group"});
-            //stage->setMinMaxDistance(0.01, 0.1); 
+            stage->setMinMaxDistance(0.02, 0.1); 
             stage->setIKFrame(gripper_frame);
             stage->properties().set("marker_ns", "lift_cup");
 
@@ -660,22 +660,41 @@ mtc::Task UrControl::createTask()
 
         // ***Retract from Coffee Machine <MoveRelative>***
         {
-            auto stage = std::make_unique<mtc::stages::MoveRelative>("retract coffee", cartesian_planner);
+            auto stage = std::make_unique<mtc::stages::MoveRelative>("retract coffee1", cartesian_planner);
             stage->properties().configureInitFrom(mtc::Stage::PARENT, {"group"});
             //stage->setMinMaxDistance(0.1, 0.2);
             stage->setIKFrame(gripper_frame);
-            stage->properties().set("marker_ns", "retract_coffee");
+            stage->properties().set("marker_ns", "retract_coffee1");
             // Set Direction
             geometry_msgs::msg::Vector3Stamped vec;
             vec.header.frame_id = "world";
-            vec.vector.x = fill_retractX;
-            vec.vector.y = fill_retractY;
+            vec.vector.x = fill_retractX1;
+            vec.vector.y = fill_retractY1;
             //vec.vector.z = fill_retract;
             stage->setDirection(vec);
             // Get Pose for next stage TODO: FIX FOR USE
             //current_pose = moveit::planning_interface::MoveGroupInterface::getCurrentPose("tool0");
             fill->insert(std::move(stage));
         }
+
+        {
+            auto stage = std::make_unique<mtc::stages::MoveRelative>("retract coffee2", cartesian_planner);
+            stage->properties().configureInitFrom(mtc::Stage::PARENT, {"group"});
+            //stage->setMinMaxDistance(0.1, 0.2);
+            stage->setIKFrame(gripper_frame);
+            stage->properties().set("marker_ns", "retract_coffee2");
+            // Set Direction
+            geometry_msgs::msg::Vector3Stamped vec;
+            vec.header.frame_id = "world";
+            vec.vector.x = fill_retractX2;
+            vec.vector.y = fill_retractY2;
+            //vec.vector.z = fill_retract;
+            stage->setDirection(vec);
+            // Get Pose for next stage TODO: FIX FOR USE
+            //current_pose = moveit::planning_interface::MoveGroupInterface::getCurrentPose("tool0");
+            fill->insert(std::move(stage));
+        }
+        */
         
         // ***Lower Cup <MoveRelative>***
         {

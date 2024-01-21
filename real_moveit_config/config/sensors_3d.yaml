@@ -7,5 +7,5 @@ default_sensor:
   padding_offset: 0.15
   padding_scale: 1.5
   point_cloud_topic: /camera/depth/color/points
-  point_subsample: 2
+  point_subsample: 4
   sensor_plugin: occupancy_map_monitor/PointCloudOctomapUpdater

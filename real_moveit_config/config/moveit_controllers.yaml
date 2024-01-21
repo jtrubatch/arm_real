@@ -21,6 +21,8 @@ moveit_simple_controller_manager:
     default: true
   gripper_controller:
     type: GripperCommand
+    #allowed_execution_duration_scaling: 5.0
+    #allowed_goal_duration_margin: 5.0
     joints:
       - rg2_gripper_finger_left_joint
     action_ns: gripper_cmd

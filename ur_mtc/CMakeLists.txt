@@ -8,6 +8,8 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
+find_package(control_msgs REQUIRED)
 find_package(moveit_core REQUIRED)
 find_package(moveit_task_constructor_core REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
@@ -28,12 +30,10 @@ target_compile_features(mtc_test PUBLIC c_std_99 cxx_std_17)  # Require C99 and 
 install(TARGETS mtc_test
 		DESTINATION lib/${PROJECT_NAME})
 
-add_executable(mtc_test_ng src/mtc_test_ng.cpp)
-ament_target_dependencies(mtc_test_ng rclcpp moveit_core moveit_task_constructor_core moveit_ros_planning_interface pcl_ros pcl_conversions pcl_msgs sensor_msgs)
+add_executable(gripper_action src/gripper_action.cpp)
+ament_target_dependencies(gripper_action rclcpp rclcpp_action control_msgs)
 
-target_compile_features(mtc_test_ng PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-
-install(TARGETS mtc_test_ng
+install(TARGETS gripper_action
 		DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY 

@@ -18,7 +18,7 @@ def generate_launch_description():
    
     test = Node(
         package="ur_mtc",
-        executable="mtc_test",
+        executable="mtc_c2",
         output="screen",
         parameters=[
             moveit_config.robot_description,
